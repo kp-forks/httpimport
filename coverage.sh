@@ -1,8 +1,3 @@
-# coverage erase
-# coverage run  --append --source . -m 
-# coverage run  --append --source . -m 
-
-pytest --cov httpimport test.py
+tox -c multi-cov-tox.ini
 coverage-badge -o coverage.svg -f
-coverage html
-firefox htmlcov/index.html
+firefox $(pwd)/htmlcov/index.html
