@@ -38,6 +38,15 @@ class Test( unittest.TestCase ) :
 
 		self.assertTrue(test_package)
 
+	def test_simple_HTTP_fail(self) :
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
+			try:
+				import test_package_nonexistent
+			except ImportError as e:
+				self.assertTrue(e)
+
+
 
 	def test_zip_import(self):
 		self.assertFalse('test_package' in sys.modules)
