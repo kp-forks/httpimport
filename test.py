@@ -60,6 +60,19 @@ class Test( unittest.TestCase ) :
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
 		del sys.modules['test_package']
 
+
+	def test_tarbz2_import(self):
+		self.assertFalse('test_package' in sys.modules)
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(
+			['test_package'],
+			base_url = 'http://localhost:%d/test_package.tar.bz2' % self.PORT,
+			zip=True
+			):
+			import test_package
+		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		del sys.modules['test_package']
+
 	# Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
 	def test_zip_import_w_pwd(self):
 		self.assertFalse('test_package' in sys.modules)

@@ -19,6 +19,7 @@ import sys
 import logging
 import io
 import zipfile
+import tarfile
 import os
 
 from contextlib import contextmanager
@@ -66,17 +67,61 @@ The 'base_url' parameter is a string containing the URL where the repository/dir
 It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
-    def __init__(self, modules, base_url, zip=False, zip_pwd=None):
-        if zip_pwd is not None and zip == False:
-            raise IllegalArgumentException(
-                    "Zip File password is set but the 'zip' parameter is not enabled"
-                )
+    __compressed_file_opener={
+        'zip': 'r',
+        'tar.gz':'r:gz',
+        'tar.bz2':'r:bz2',
+        'tar.xz':'r:xz',
+        None:'invalid'
+    }
+
+    def _list_archive(self, archive_obj):
+        if isinstance(archive_obj, tarfile.TarFile):
+            return archive_obj.getnames()
+        if isinstance(archive_obj, zipfile.ZipFile):
+            return archive_obj.filelist
+
+        raise ValueError("Object is not a ZIP or TAR archive")
+
+
+    def _open_archive_file(self, archive_obj, filepath, mode='r', **kw):
+        if isinstance(archive_obj, tarfile.TarFile):
+            return archive_obj.extractfile(filepath)
+        if isinstance(archive_obj, zipfile.ZipFile):
+            return archive_obj.open(filepath, mode, pwd=self.__zip_pwd)
+
+        raise ValueError("Object is not a ZIP or TAR archive")
+
+
+    def _detect_filetype(self, base_url):
+        try:
+            resp = urlopen(base_url).read();
+        except Exception:   # Base URL is not callable in GitHub /raw/ contents
+            return False, None
+
+        resp_io = io.BytesIO(resp)
+        try:
+            tar = tarfile.TarFile(fileobj=resp_io)
+            return True, tar
+        except tarfile.ReadError:
+            logger.info("Response of '%s' is not a (compressed) tarball")
+
+        try:
+            zip = zipfile.ZipFile(resp_io)
+            return True, zip
+        except zipfile.BadZipfile:
+            logger.info("Response of '%s' is not a ZIP file")
+
+        return False, resp
+
+
+    # def __init__(self, modules, base_url, filetype=None, detect_filetype=True, zip_pwd=None):
+    def __init__(self, modules, base_url, filetype=None, detect_filetype=True, zip_pwd=None, zip=None):
 
         self.module_names = modules
         self.base_url = base_url + '/'
         self.non_source = NON_SOURCE
         self.in_progress = {}
-        self.zip = zip
         self.__zip_pwd = zip_pwd
 
         if not INSECURE and not self.__isHTTPS(base_url) :
@@ -86,15 +131,14 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if not self.__isHTTPS(base_url):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
 
-        if self.zip:
-            self.z = urlopen(base_url).read()
-            zio = io.BytesIO(self.z)
-            self.zfile = zipfile.ZipFile(zio)
+        self.is_archive, self.archive = self._detect_filetype(base_url)
+
+        if self.is_archive:
             logger.info("[+] ZIP file loaded successfully from '%s'!" % self.base_url)
             self._paths = [
                     x.filename
                     # "/".join(x.filename.split('/')[traverse_dir:])
-                    for x in self.zfile.filelist
+                    for x in self._list_archive(self.archive)
                 ]
 
 
@@ -144,10 +188,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             logger.info("[-] Found locally!")
             return None
 
-        if self.zip:
-            logger.info("[@] Checking if module exists in loaded ZIP file >")
+        if self.is_archive:
+            logger.info("[@] Checking if module exists in loaded Archive file >")
             if self._mod_to_paths(fullname) is  None:
-                logger.info("[-] Not Found in ZIP file!")
+                logger.info("[-] Not Found in Archive file!")
                 return None
 
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
@@ -169,10 +213,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             if LEGACY: imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
-        if self.zip:
+        if self.is_archive:
             zip_name = self._mod_to_paths(name)
             if not zip_name in self._paths:
-                logger.info('[-] Requested module/package "%s" name not available in ZIP file list!' % zip_name)
+                logger.info('[-] Requested module/package "%s" name not available in Archive file list!' % zip_name)
                 if LEGACY: imp.release_lock()
                 raise ImportError(zip_name)
 
@@ -181,8 +225,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         final_url = None
         final_src = None
 
-        if self.zip:
-            package_src = self.zfile.open(zip_name, 'r', pwd=self.__zip_pwd).read()
+        if self.is_archive:
+            package_src = self._open_archive_file(self.archive, zip_name, 'r', pwd=self.__zip_pwd).read()
             logger.info('[+] Source from zipped file "%s" loaded!' % zip_name)       
             final_src = package_src
 
