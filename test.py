@@ -15,6 +15,7 @@ import httpimport
 import unittest
 from random import randint
 
+import logging; logging.getLogger('httpimport').setLevel(logging.DEBUG)
 
 class Test( unittest.TestCase ) :
 
@@ -47,7 +48,6 @@ class Test( unittest.TestCase ) :
 				self.assertTrue(e)
 
 
-
 	def test_zip_import(self):
 		self.assertFalse('test_package' in sys.modules)
 		httpimport.INSECURE = True
@@ -67,6 +67,47 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.bz2' % self.PORT,
+			zip=True
+			):
+			import test_package
+		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		del sys.modules['test_package']
+
+
+	def test_tarxz_import(self):
+		self.assertFalse('test_package' in sys.modules)
+		if httpimport.LEGACY:	# Pass the test in Python2, which does not support tar.xz lzma
+			self.assertTrue(True)
+			return
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(
+			['test_package'],
+			base_url = 'http://localhost:%d/test_package.tar.xz' % self.PORT,
+			zip=True
+			):
+			import test_package
+		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		del sys.modules['test_package']
+
+
+	def test_targz_import(self):
+		self.assertFalse('test_package' in sys.modules)
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(
+			['test_package'],
+			base_url = 'http://localhost:%d/test_package.tar.gz' % self.PORT,
+			zip=True
+			):
+			import test_package
+		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		del sys.modules['test_package']
+
+	def test_tar_import(self):
+		self.assertFalse('test_package' in sys.modules)
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(
+			['test_package'],
+			base_url = 'http://localhost:%d/test_package.tar' % self.PORT,
 			zip=True
 			):
 			import test_package

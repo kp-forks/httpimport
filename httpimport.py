@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -67,19 +67,11 @@ The 'base_url' parameter is a string containing the URL where the repository/dir
 It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
-    __compressed_file_opener={
-        'zip': 'r',
-        'tar.gz':'r:gz',
-        'tar.bz2':'r:bz2',
-        'tar.xz':'r:xz',
-        None:'invalid'
-    }
-
     def _list_archive(self, archive_obj):
         if isinstance(archive_obj, tarfile.TarFile):
             return archive_obj.getnames()
         if isinstance(archive_obj, zipfile.ZipFile):
-            return archive_obj.filelist
+            return [x.filename for x in archive_obj.filelist]
 
         raise ValueError("Object is not a ZIP or TAR archive")
 
@@ -101,16 +93,16 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         resp_io = io.BytesIO(resp)
         try:
-            tar = tarfile.TarFile(fileobj=resp_io)
-            return True, tar
+            tar = tarfile.open(fileobj=resp_io, mode='r:*')
+            return 'tar', tar
         except tarfile.ReadError:
-            logger.info("Response of '%s' is not a (compressed) tarball")
+            logger.info("Response of '%s' is not a (compressed) tarball" % base_url)
 
         try:
             zip = zipfile.ZipFile(resp_io)
-            return True, zip
+            return 'zip', zip
         except zipfile.BadZipfile:
-            logger.info("Response of '%s' is not a ZIP file")
+            logger.info("Response of '%s' is not a ZIP file" % base_url)
 
         return False, resp
 
@@ -135,12 +127,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         if self.is_archive:
             logger.info("[+] ZIP file loaded successfully from '%s'!" % self.base_url)
-            self._paths = [
-                    x.filename
-                    # "/".join(x.filename.split('/')[traverse_dir:])
-                    for x in self._list_archive(self.archive)
-                ]
-
+            self._paths = self._list_archive(self.archive)
+            # # "/".join(x.filename.split('/')[traverse_dir:])
 
     def _mod_to_paths(self, fullname):
         # get the python module name
