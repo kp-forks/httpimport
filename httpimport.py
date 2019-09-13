@@ -58,42 +58,6 @@ if LEGACY:
 else:
     import importlib
 
-def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
-    if isinstance(archive_obj, tarfile.TarFile):
-        return archive_obj.extractfile(filepath)
-    if isinstance(archive_obj, zipfile.ZipFile):
-        return archive_obj.open(filepath, mode, pwd=zip_pwd)
-
-    raise ValueError("Object is not a ZIP or TAR archive")
-
-def _list_archive(archive_obj):
-    if isinstance(archive_obj, tarfile.TarFile):
-        return archive_obj.getnames()
-    if isinstance(archive_obj, zipfile.ZipFile):
-        return [x.filename for x in archive_obj.filelist]
-
-    raise ValueError("Object is not a ZIP or TAR archive")
-
-def _detect_filetype(base_url):
-    try:
-        resp = urlopen(base_url).read();
-    except Exception:   # Base URL is not callable in GitHub /raw/ contents - returns 400 Error
-        return HttpImporter.WEB_ARCHIVE, None
-
-    resp_io = io.BytesIO(resp)
-    try:
-        tar = tarfile.open(fileobj=resp_io, mode='r:*')
-        return HttpImporter.TAR_ARCHIVE, tar
-    except tarfile.ReadError:
-        logger.info("Response of '%s' is not a (compressed) tarball" % base_url)
-
-    try:
-        zip = zipfile.ZipFile(resp_io)
-        return HttpImporter.ZIP_ARCHIVE, zip
-    except zipfile.BadZipfile:
-        logger.info("Response of '%s' is not a ZIP file" % base_url)
-
-    return HttpImporter.WEB_ARCHIVE, resp
 
 
 class HttpImporter(object):
@@ -129,7 +93,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if not self.__isHTTPS(base_url):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
 
-        self.filetype, self.archive = _detect_filetype(base_url)
+        try:
+            self.filetype, self.archive = _detect_filetype(base_url)
+        except IOError:
+            raise ImportError("URL content cannot be detected or opened")
 
         self.is_archive = False
         if self.filetype in [HttpImporter.TAR_ARCHIVE, HttpImporter.ZIP_ARCHIVE]:
@@ -305,6 +272,50 @@ It is better to not use this class directly, but through its wrappers ('remote_r
     def __isHTTPS(self, url) :
         return self.base_url.startswith('https') 
 
+def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
+    if isinstance(archive_obj, tarfile.TarFile):
+        return archive_obj.extractfile(filepath)
+    if isinstance(archive_obj, zipfile.ZipFile):
+        return archive_obj.open(filepath, mode, pwd=zip_pwd)
+
+    raise ValueError("Object is not a ZIP or TAR archive")
+
+def _list_archive(archive_obj):
+    if isinstance(archive_obj, tarfile.TarFile):
+        return archive_obj.getnames()
+    if isinstance(archive_obj, zipfile.ZipFile):
+        return [x.filename for x in archive_obj.filelist]
+
+    raise ValueError("Object is not a ZIP or TAR archive")
+
+def _detect_filetype(base_url):
+    try:
+        resp_obj = urlopen(base_url);
+        resp = resp_obj.read()
+        if "text" in resp_obj.headers['Content-Type']:
+            logger.info("[+] Response of '%s' is HTML. - Content-Type: %s" % (base_url, resp_obj.headers['Content-Type']))
+            return HttpImporter.WEB_ARCHIVE, resp
+
+    except Exception as e:   # Base URL is not callable in GitHub /raw/ contents - returns 400 Error
+        logger.info("[!] Response of '%s' triggered '%s'" % (base_url, e))
+        return HttpImporter.WEB_ARCHIVE, None
+
+    resp_io = io.BytesIO(resp)
+    try:
+        tar = tarfile.open(fileobj=resp_io, mode='r:*')
+        logger.info("[+] Response of '%s' is a Tarball" % base_url)
+        return HttpImporter.TAR_ARCHIVE, tar
+    except tarfile.ReadError:
+        logger.info("Response of '%s' is not a (compressed) tarball" % base_url)
+
+    try:
+        zip = zipfile.ZipFile(resp_io)
+        logger.info("[+] Response of '%s' is a ZIP file" % base_url)
+        return HttpImporter.ZIP_ARCHIVE, zip
+    except zipfile.BadZipfile:
+        logger.info("Response of '%s' is not a ZIP file" % base_url)
+
+    raise IOError("URL content is Invalid")
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL

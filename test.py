@@ -54,7 +54,6 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.zip' % self.PORT,
-			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -67,11 +66,24 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.bz2' % self.PORT,
-			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
 		del sys.modules['test_package']
+
+
+	def test_autodetect_corrupt_file(self):
+		self.assertFalse('test_package' in sys.modules)
+		httpimport.INSECURE = True
+		try:
+			with httpimport.remote_repo(
+				['test_package'],
+				base_url = 'http://localhost:%d/test_package.corrupted.tar' % self.PORT,
+				):
+					import test_package
+		except ImportError as e:
+			self.assertTrue(e)
+		self.assertFalse('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
 
 
 	def test_tarxz_import(self):
@@ -83,7 +95,6 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.xz' % self.PORT,
-			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -96,7 +107,6 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.gz' % self.PORT,
-			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -108,7 +118,6 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar' % self.PORT,
-			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -121,7 +130,6 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.enc.zip' % self.PORT,
-			# zip=True,
 			zip_pwd=b'P@ssw0rd!'#	<--- Correct Password
 			):
 			import test_package
@@ -136,7 +144,6 @@ class Test( unittest.TestCase ) :
 			with httpimport.remote_repo(
 				['test_package'],
 				base_url = 'http://localhost:%d/test_package.enc.zip' % self.PORT,
-				# zip=True,
 				zip_pwd=b'XXXXXXXX'	#	<--- Wrong Password
 				):
 				import test_package
@@ -177,9 +184,6 @@ class Test( unittest.TestCase ) :
 		httpimport.INSECURE = True
 		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
 		self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
-
-
-
 
 
 

@@ -200,15 +200,25 @@ This covers the posibility of using `httpimport` to target local development env
 which is a strong use case for `httpimport`.
 
 
-### Import remote (encrypted) ZIP files (as of `0.5.18`)
-After version `0.5.18` the `add_remote_repo` and the `load` functions,
-as well as the `remote_repo` context got the `zip` and `zip_pwd` parameters.
-By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely load modules/packages included in it,
-*without downloading the ZIP file to disk*!
+### Import remote (encrypted) ZIP files and (compressed) Tarballs (as of `0.7.0`)
+After version `0.7.0` all `HttpImporters` come with auto-detection on file type.
+The detection does not take into account the file extension of the URL, but the actual content.
+
+
+By pointing to a HTTP/S URL containing a ZIP or a `tar[.gz|.bz2]`\ file (also `tar.xz` for Python3 only),
+it is possible to remotely load modules/packages included in it,
+*without downloading the archive file to disk*!
 ```python
 >>> with httpimport.remote_repo(
 ...     ['test_package'], base_url='http://localhost:8000/test_package.zip',
-...     zip=True
+...     ):
+...    import test_package
+...
+>>>
+```
+```python
+>>> with httpimport.remote_repo(
+...     ['test_package'], base_url='http://localhost:8000/test_package.tar.bz2',
 ...     ):
 ...    import test_package
 ...
@@ -218,7 +228,7 @@ By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely lo
 ```python
 >>> with httpimport.remote_repo(
 ...     ['test_package'], base_url='http://localhost:8000/test_package.enc.zip',
-...     zip=True, zip_pwd=b'P@ssw0rd!'
+...     zip_pwd=b'P@ssw0rd!'
 ...     ):
 ...    import test_package
 ...
