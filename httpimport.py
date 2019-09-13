@@ -58,6 +58,44 @@ if LEGACY:
 else:
     import importlib
 
+def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
+    if isinstance(archive_obj, tarfile.TarFile):
+        return archive_obj.extractfile(filepath)
+    if isinstance(archive_obj, zipfile.ZipFile):
+        return archive_obj.open(filepath, mode, pwd=zip_pwd)
+
+    raise ValueError("Object is not a ZIP or TAR archive")
+
+def _list_archive(archive_obj):
+    if isinstance(archive_obj, tarfile.TarFile):
+        return archive_obj.getnames()
+    if isinstance(archive_obj, zipfile.ZipFile):
+        return [x.filename for x in archive_obj.filelist]
+
+    raise ValueError("Object is not a ZIP or TAR archive")
+
+def _detect_filetype(base_url):
+    try:
+        resp = urlopen(base_url).read();
+    except Exception:   # Base URL is not callable in GitHub /raw/ contents - returns 400 Error
+        return HttpImporter.WEB_ARCHIVE, None
+
+    resp_io = io.BytesIO(resp)
+    try:
+        tar = tarfile.open(fileobj=resp_io, mode='r:*')
+        return HttpImporter.TAR_ARCHIVE, tar
+    except tarfile.ReadError:
+        logger.info("Response of '%s' is not a (compressed) tarball" % base_url)
+
+    try:
+        zip = zipfile.ZipFile(resp_io)
+        return HttpImporter.ZIP_ARCHIVE, zip
+    except zipfile.BadZipfile:
+        logger.info("Response of '%s' is not a ZIP file" % base_url)
+
+    return HttpImporter.WEB_ARCHIVE, resp
+
+
 class HttpImporter(object):
     """
 The class that implements the Importer API. Contains the "find_module" and "load_module" methods.
@@ -67,48 +105,16 @@ The 'base_url' parameter is a string containing the URL where the repository/dir
 It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
-    def _list_archive(self, archive_obj):
-        if isinstance(archive_obj, tarfile.TarFile):
-            return archive_obj.getnames()
-        if isinstance(archive_obj, zipfile.ZipFile):
-            return [x.filename for x in archive_obj.filelist]
+    TAR_ARCHIVE = 'tar'
+    ZIP_ARCHIVE = 'zip'
+    WEB_ARCHIVE = 'html'
+    ARCHIVE_TYPES = [
+        ZIP_ARCHIVE,
+        TAR_ARCHIVE,
+        WEB_ARCHIVE
+    ]
 
-        raise ValueError("Object is not a ZIP or TAR archive")
-
-
-    def _open_archive_file(self, archive_obj, filepath, mode='r', **kw):
-        if isinstance(archive_obj, tarfile.TarFile):
-            return archive_obj.extractfile(filepath)
-        if isinstance(archive_obj, zipfile.ZipFile):
-            return archive_obj.open(filepath, mode, pwd=self.__zip_pwd)
-
-        raise ValueError("Object is not a ZIP or TAR archive")
-
-
-    def _detect_filetype(self, base_url):
-        try:
-            resp = urlopen(base_url).read();
-        except Exception:   # Base URL is not callable in GitHub /raw/ contents
-            return False, None
-
-        resp_io = io.BytesIO(resp)
-        try:
-            tar = tarfile.open(fileobj=resp_io, mode='r:*')
-            return 'tar', tar
-        except tarfile.ReadError:
-            logger.info("Response of '%s' is not a (compressed) tarball" % base_url)
-
-        try:
-            zip = zipfile.ZipFile(resp_io)
-            return 'zip', zip
-        except zipfile.BadZipfile:
-            logger.info("Response of '%s' is not a ZIP file" % base_url)
-
-        return False, resp
-
-
-    # def __init__(self, modules, base_url, filetype=None, detect_filetype=True, zip_pwd=None):
-    def __init__(self, modules, base_url, filetype=None, detect_filetype=True, zip_pwd=None, zip=None):
+    def __init__(self, modules, base_url, zip_pwd=None):
 
         self.module_names = modules
         self.base_url = base_url + '/'
@@ -123,11 +129,15 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if not self.__isHTTPS(base_url):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
 
-        self.is_archive, self.archive = self._detect_filetype(base_url)
+        self.filetype, self.archive = _detect_filetype(base_url)
+
+        self.is_archive = False
+        if self.filetype in [HttpImporter.TAR_ARCHIVE, HttpImporter.ZIP_ARCHIVE]:
+            self.is_archive = True
 
         if self.is_archive:
-            logger.info("[+] ZIP file loaded successfully from '%s'!" % self.base_url)
-            self._paths = self._list_archive(self.archive)
+            logger.info("[+] Archive file loaded successfully from '%s'!" % self.base_url)
+            self._paths = _list_archive(self.archive)
             # # "/".join(x.filename.split('/')[traverse_dir:])
 
     def _mod_to_paths(self, fullname):
@@ -214,7 +224,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         final_src = None
 
         if self.is_archive:
-            package_src = self._open_archive_file(self.archive, zip_name, 'r', pwd=self.__zip_pwd).read()
+            package_src = _open_archive_file(self.archive, zip_name, 'r', zip_pwd=self.__zip_pwd).read()
             logger.info('[+] Source from zipped file "%s" loaded!' % zip_name)       
             final_src = package_src
 
@@ -298,12 +308,12 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(modules, base_url='http://localhost:8000/', zip=False, zip_pwd=None):
+def remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = add_remote_repo(modules, base_url, zip=zip, zip_pwd=zip_pwd)
+    importer = add_remote_repo(modules, base_url, zip_pwd=zip_pwd)
     try:
         yield
     except ImportError as e:
@@ -313,12 +323,12 @@ The parameters are the same as the HttpImporter class contructor.
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(modules, base_url='http://localhost:8000/', zip=False, zip_pwd=None):
+def add_remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = HttpImporter(modules, base_url, zip=zip, zip_pwd=zip_pwd)
+    importer = HttpImporter(modules, base_url, zip_pwd=zip_pwd)
     sys.meta_path.insert(0, importer)
     return importer
 
@@ -443,7 +453,7 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
         remove_remote_repo(importer.base_url)
 
 
-def load(module_name, url = 'http://localhost:8000/', zip=False, zip_pwd=None):
+def load(module_name, url = 'http://localhost:8000/', zip_pwd=None):
     '''
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
@@ -453,7 +463,7 @@ Example:
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
     '''
-    importer = HttpImporter([module_name], url, zip=zip, zip_pwd=zip_pwd)
+    importer = HttpImporter([module_name], url, zip_pwd=zip_pwd)
     loader = importer.find_module(module_name)
     if loader != None :
         module = loader.load_module(module_name)

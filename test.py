@@ -54,7 +54,7 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.zip' % self.PORT,
-			zip=True
+			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -67,7 +67,7 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.bz2' % self.PORT,
-			zip=True
+			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -83,7 +83,7 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.xz' % self.PORT,
-			zip=True
+			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -96,7 +96,7 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar.gz' % self.PORT,
-			zip=True
+			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -108,7 +108,7 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.tar' % self.PORT,
-			zip=True
+			# zip=True
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
@@ -121,7 +121,7 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(
 			['test_package'],
 			base_url = 'http://localhost:%d/test_package.enc.zip' % self.PORT,
-			zip=True,
+			# zip=True,
 			zip_pwd=b'P@ssw0rd!'#	<--- Correct Password
 			):
 			import test_package
@@ -136,7 +136,7 @@ class Test( unittest.TestCase ) :
 			with httpimport.remote_repo(
 				['test_package'],
 				base_url = 'http://localhost:%d/test_package.enc.zip' % self.PORT,
-				zip=True,
+				# zip=True,
 				zip_pwd=b'XXXXXXXX'	#	<--- Wrong Password
 				):
 				import test_package
