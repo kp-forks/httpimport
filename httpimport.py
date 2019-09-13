@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -95,8 +95,9 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         try:
             self.filetype, self.archive = _detect_filetype(base_url)
+            logger.info("[+] Filetype detected '%s' for '%s'" % (self.filetype, self.base_url))
         except IOError:
-            raise ImportError("URL content cannot be detected or opened")
+            raise ImportError("URL content cannot be detected or opened (%s)" % self.base_url)
 
         self.is_archive = False
         if self.filetype in [HttpImporter.TAR_ARCHIVE, HttpImporter.ZIP_ARCHIVE]:
