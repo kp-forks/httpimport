@@ -284,7 +284,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
 def _truncate_paths(paths, path_truncate):
     sep = os.sep
-    path0 = paths[0]
+    path0 = paths[-1]
     path0_tokens = path0.split(sep)
     if len(path0_tokens) < path_truncate:
         raise ValueError("Path '%s' in archive cannot be furtherly truncated" % path0)
