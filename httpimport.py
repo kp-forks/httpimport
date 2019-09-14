@@ -30,7 +30,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -150,10 +150,14 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             if LEGACY:
                 loader = imp.find_module(fullname, path)
             else:
-                try:    # After Python3.5
+                try:    # After Python3.4
                     loader = importlib.util.find_spec(fullname, path)
                 except AttributeError:
                     loader = importlib.find_loader(fullname, path)
+                except ValueError:
+                    loader = None
+                finally:
+                    loader = None
             if loader:
                 logger.info("[-] Found locally!")
                 return None
@@ -509,32 +513,59 @@ Example:
 >>> 
     '''
     importer = HttpImporter([module_name], url, zip_pwd=zip_pwd, path_truncate=path_truncate)
-    loader = importer.find_module(module_name)
-    if loader != None :
-        module = loader.load_module(module_name)
-        if module :
-            return module
+    # loader = importer.find_module(module_name)
+
+    # if loader is importer:
+    module = importer.load_module(module_name)
+    if module:
+        return module
     raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
 
+
 def __create_pypi_url(project, version='latest'):
-    pypi_base_url = "https://pypi.org/project/{}/#files".format(project)
+    # pip install <project> - uses this API call:
+    pip_api_call = "https://pypi.org/simple/{}/".format(project)
     try:
-        resp = urlopen(pypi_base_url)
-        pypi_html = resp.read()
+        resp = urlopen(pip_api_call)
+        pypi_html = resp.read().decode(encoding='UTF-8')
     except Exception as e:
         logger.info(e)
         raise ValueError("PyPI page for project '%s' was not found. URL:%s" % (project, pypi_base_url))
-    archive_regex = r'https:.+\/(.+?)\-(\d{1}\.\d{1}\.\d{1})\.tar\.gz'
-    pypi_links = re.findall(archive_regex, pypi_html)
-    logger.debug("Links available from PyPI for project '%s' are %s" % (project, pypi_links))
-    
-    # for link in pypi_links:
-    #     m = re.match(archive_regex, link)
+
+    # Captures Link, Filename, ProjectName, Version
+    # archive_regex = r'<a.*?href=\"(.*)\"\.*?>(.+?)\-(\d{1}\.\d{1}\.\d{1})\.tar\.gz</a><br/>'
+    archive_regex = r'<a.*?href=\"(.*)\"\.*?>((.+?)\-(\d{1}\.\d{1}\.\d{1}).*?)</a><br/>'
+    pypi_matches = re.findall(archive_regex, pypi_html)
+    logger.debug("Links available from PyPI for project '%s' are %s" % (project, pypi_matches))
+    link_dict = {}
+    for m in pypi_matches:
+        link = m[0]
+        filename = m[1]
+        _project = m[2]
+        version = m[3]
+        link_dict[version] = link
+
+    if version == 'latest':
+        latest = sorted(link_dict.keys())[0]
+        logger.info("[+] Loading '%s' - version '%s'" % (project,version))
+        return link_dict[latest], filename
+    else:
+        try:
+            ret_link = link_dict[version]
+            logger.info("[+] Loading '%s' - version '%s'" % (project,version))
+            return ret_link, filename
+        except KeyError:
+            raise ValueError("Version '%s' not available for PyPI project '%s'" % (version, project))
 
 
-def pip_load(project, version='latest'):
-    archive_url = __create_pypi_url(project, version=version)
-    module = load(project, archive_url, path_truncate=1)
+def pip_load(project, module=None, version='latest'):
+    archive_url, filename = __create_pypi_url(project, version=version)
+    package = project if module is None else module
+    if filename.endswith('.whl'):   # It's a Python Wheel
+        path_truncate = 0
+    else:
+        path_truncate = 1
+    module = load(package, archive_url, path_truncate=path_truncate)
     return module
 
 

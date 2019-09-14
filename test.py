@@ -55,7 +55,7 @@ class Test( unittest.TestCase ) :
 			base_url = 'http://localhost:%d/test_package.zip' % self.PORT,
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 	def test_zip_truncate1(self):
@@ -67,7 +67,7 @@ class Test( unittest.TestCase ) :
 			path_truncate=1
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 
@@ -80,7 +80,7 @@ class Test( unittest.TestCase ) :
 			path_truncate=2
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 	def test_tarbz2_import(self):
@@ -91,7 +91,7 @@ class Test( unittest.TestCase ) :
 			base_url = 'http://localhost:%d/test_package.tar.bz2' % self.PORT,
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 
@@ -106,7 +106,7 @@ class Test( unittest.TestCase ) :
 					import test_package
 		except ImportError as e:
 			self.assertTrue(e)
-		self.assertFalse('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertFalse('test_package' in sys.modules)	
 
 
 	def test_tarxz_import(self):
@@ -120,7 +120,7 @@ class Test( unittest.TestCase ) :
 			base_url = 'http://localhost:%d/test_package.tar.xz' % self.PORT,
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 
@@ -132,7 +132,7 @@ class Test( unittest.TestCase ) :
 			base_url = 'http://localhost:%d/test_package.tar.gz' % self.PORT,
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 	def test_tar_import(self):
@@ -143,7 +143,7 @@ class Test( unittest.TestCase ) :
 			base_url = 'http://localhost:%d/test_package.tar' % self.PORT,
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 	# Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
@@ -156,7 +156,7 @@ class Test( unittest.TestCase ) :
 			zip_pwd=b'P@ssw0rd!'#	<--- Correct Password
 			):
 			import test_package
-		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue('test_package' in sys.modules)	
 		del sys.modules['test_package']
 
 	# Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
@@ -173,14 +173,14 @@ class Test( unittest.TestCase ) :
 		except RuntimeError:
 			pass # <--- zipfile module fails for wrong password
 
-		self.assertFalse('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		self.assertFalse('test_package' in sys.modules)	
 
 
 	def test_github_repo(self) :
 		print ("[+] Importing from GitHub")
 		with httpimport.github_repo( 'operatorequals', 'covertutils', ) :
 			import covertutils
-		self.assertTrue(covertutils)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue(covertutils)	
 		del sys.modules['covertutils']
 
 
@@ -206,12 +206,22 @@ class Test( unittest.TestCase ) :
 	def test_load_http(self) :
 		httpimport.INSECURE = True
 		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
-		self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue(pack)	
 
 
-	# def test_pip_load(self) :
-	# 	pack = httpimport.pip_load('covertutils')
-	# 	self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
+	def test_pip_load(self) :
+		pack = httpimport.pip_load('httpimport', version='latest')
+		self.assertTrue(pack)
+
+	def test_pip_load_version(self) :
+		pack = httpimport.pip_load('httpimport', version='0.6.0')
+		self.assertTrue(pack)
+
+	def test_pip_load_version_invalid(self) :
+		try:
+			pack = httpimport.pip_load('httpimport', version='99.9.99')
+		except ValueError as e:
+			self.assertTrue(e)
 
 
 
