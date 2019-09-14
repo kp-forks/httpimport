@@ -209,6 +209,10 @@ class Test( unittest.TestCase ) :
 		self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
 
 
+	# def test_pip_load(self) :
+	# 	pack = httpimport.pip_load('covertutils')
+	# 	self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
+
 
 
 # ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory

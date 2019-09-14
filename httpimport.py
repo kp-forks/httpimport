@@ -21,6 +21,7 @@ import io
 import zipfile
 import tarfile
 import os
+import re
 
 from contextlib import contextmanager
 try:
@@ -515,6 +516,26 @@ Example:
             return module
     raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
 
+def __create_pypi_url(project, version='latest'):
+    pypi_base_url = "https://pypi.org/project/{}/#files".format(project)
+    try:
+        resp = urlopen(pypi_base_url)
+        pypi_html = resp.read()
+    except Exception as e:
+        logger.info(e)
+        raise ValueError("PyPI page for project '%s' was not found. URL:%s" % (project, pypi_base_url))
+    archive_regex = r'https:.+\/(.+?)\-(\d{1}\.\d{1}\.\d{1})\.tar\.gz'
+    pypi_links = re.findall(archive_regex, pypi_html)
+    logger.debug("Links available from PyPI for project '%s' are %s" % (project, pypi_links))
+    
+    # for link in pypi_links:
+    #     m = re.match(archive_regex, link)
+
+
+def pip_load(project, version='latest'):
+    archive_url = __create_pypi_url(project, version=version)
+    module = load(project, archive_url, path_truncate=1)
+    return module
 
 
 __all__ = [
