@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -78,7 +78,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         WEB_ARCHIVE
     ]
 
-    def __init__(self, modules, base_url, zip_pwd=None):
+    def __init__(self, modules, base_url, zip_pwd=None, path_truncate=0):
 
         self.module_names = modules
         self.base_url = base_url + '/'
@@ -107,12 +107,21 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             logger.info("[+] Archive file loaded successfully from '%s'!" % self.base_url)
             self._paths = _list_archive(self.archive)
             # # "/".join(x.filename.split('/')[traverse_dir:])
+            if not self._paths:
+                raise ValueError("Archive is empty")
+            if path_truncate:
+                self.path_prefix, self._paths = _truncate_paths(self._paths, path_truncate)
+            else:
+                self.path_prefix = ''
+
 
     def _mod_to_paths(self, fullname):
         # get the python module name
         py_filename = fullname.replace(".", os.sep) + ".py"
         # get the filename if it is a package/subpackage
         py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__.py"
+        # logger.debug("[*] Searching filepath '%s' in archive paths" % py_filename)
+        # logger.debug("[*] Searching filepath '%s' in archive paths" % py_package)
         if py_filename in self._paths:
             return py_filename
         elif py_package in self._paths:
@@ -192,7 +201,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         final_src = None
 
         if self.is_archive:
-            package_src = _open_archive_file(self.archive, zip_name, 'r', zip_pwd=self.__zip_pwd).read()
+            full_zip_path = self.path_prefix + zip_name
+            package_src = _open_archive_file(self.archive, full_zip_path, 'r', zip_pwd=self.__zip_pwd).read()
             logger.info('[+] Source from zipped file "%s" loaded!' % zip_name)       
             final_src = package_src
 
@@ -269,11 +279,33 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
         return module_src
 
-
     def __isHTTPS(self, url) :
         return self.base_url.startswith('https') 
 
+def _truncate_paths(paths, path_truncate):
+    sep = os.sep
+    path0 = paths[0]
+    path0_tokens = path0.split(sep)
+    if len(path0_tokens) < path_truncate:
+        raise ValueError("Path '%s' in archive cannot be furtherly truncated" % path0)
+    path_prefix = sep.join(path0_tokens[:path_truncate]) + sep
+    path_prefix_len = len(path_prefix)
+    truncated_paths = []
+    for path in paths:
+        logger.debug("[*] Truncating archive path '%s'" % path)
+        if path.startswith(path_prefix):
+            truncated_path = path[path_prefix_len:]
+            if truncated_path:
+                truncated_paths.append(truncated_path)
+        else:
+            ValueError("Not all archive files are in the same directory")
+
+    logger.info("[+] Paths truncated with prefix '%s'" % path_prefix)
+    logger.debug("[+] The paths are '%s'" % truncated_paths)
+    return path_prefix, truncated_paths
+
 def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
+    logger.debug("[*] Extracting '%s'" % filepath)
     if isinstance(archive_obj, tarfile.TarFile):
         return archive_obj.extractfile(filepath)
     if isinstance(archive_obj, zipfile.ZipFile):
@@ -320,12 +352,12 @@ def _detect_filetype(base_url):
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None):
+def remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None, path_truncate=0):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = add_remote_repo(modules, base_url, zip_pwd=zip_pwd)
+    importer = add_remote_repo(modules, base_url, zip_pwd=zip_pwd, path_truncate=path_truncate)
     try:
         yield
     except ImportError as e:
@@ -335,12 +367,12 @@ The parameters are the same as the HttpImporter class contructor.
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None):
+def add_remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None, path_truncate=0):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = HttpImporter(modules, base_url, zip_pwd=zip_pwd)
+    importer = HttpImporter(modules, base_url, zip_pwd=zip_pwd, path_truncate=path_truncate)
     sys.meta_path.insert(0, importer)
     return importer
 
@@ -465,7 +497,7 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
         remove_remote_repo(importer.base_url)
 
 
-def load(module_name, url = 'http://localhost:8000/', zip_pwd=None):
+def load(module_name, url = 'http://localhost:8000/', zip_pwd=None, path_truncate=0):
     '''
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
@@ -475,7 +507,7 @@ Example:
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
     '''
-    importer = HttpImporter([module_name], url, zip_pwd=zip_pwd)
+    importer = HttpImporter([module_name], url, zip_pwd=zip_pwd, path_truncate=path_truncate)
     loader = importer.find_module(module_name)
     if loader != None :
         module = loader.load_module(module_name)

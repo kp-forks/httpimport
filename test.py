@@ -59,6 +59,17 @@ class Test( unittest.TestCase ) :
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
 		del sys.modules['test_package']
 
+	def test_zip_truncate(self):
+		self.assertFalse('test_package' in sys.modules)
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(
+			['test_package'],
+			base_url = 'http://localhost:%d/test_package_truncate1.zip' % self.PORT,
+			path_truncate=1
+			):
+			import test_package
+		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
+		del sys.modules['test_package']
 
 	def test_tarbz2_import(self):
 		self.assertFalse('test_package' in sys.modules)
