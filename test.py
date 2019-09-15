@@ -245,6 +245,12 @@ class Test( unittest.TestCase ) :
 		except ValueError as e:
 			self.assertTrue(e)
 
+	def test_pip_repo(self):
+		with httpimport.pip_repo():
+			import covertutils
+		succeeds = 'covertutils' in sys.modules
+		del sys.modules['covertutils']
+		self.assertTrue(succeeds)
 
 
 # ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory

@@ -156,8 +156,6 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                     loader = importlib.find_loader(fullname, path)
                 except ValueError:
                     loader = None
-                finally:
-                    loader = None
             if loader:
                 logger.info("[-] Found locally!")
                 return None
@@ -309,7 +307,7 @@ def _truncate_paths(paths, path_truncate):
             ValueError("Not all archive files are in the same directory")
 
     logger.info("[+] Paths truncated with prefix '%s'" % path_prefix)
-    logger.debug("[+] The paths are '%s'" % truncated_paths)
+    # logger.debug("[+] The paths are '%s'" % truncated_paths)
     return path_prefix, truncated_paths
 
 def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
@@ -526,7 +524,7 @@ Example:
     raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
 
 
-def __create_pypi_url(project, version='latest'):
+def _create_pypi_url(project, version='latest'):
     # pip install <project> - uses this API call:
     pip_api_call = "https://pypi.org/simple/{}/".format(project)
     try:
@@ -534,7 +532,7 @@ def __create_pypi_url(project, version='latest'):
         pypi_html = resp.read().decode(encoding='UTF-8')
     except Exception as e:
         logger.info(e)
-        raise ValueError("PyPI page for project '%s' was not found. URL:%s" % (project, pypi_base_url))
+        raise ValueError("PyPI page for project '%s' was not found. URL:%s" % (project, pip_api_call))
 
     # Captures Link, Filename, ProjectName, Version
     # archive_regex = r'<a.*?href=\"(.*)\"\.*?>(.+?)\-(\d{1}\.\d{1}\.\d{1})\.tar\.gz</a><br/>'
@@ -563,7 +561,7 @@ def __create_pypi_url(project, version='latest'):
 
 
 def pip_load(project, module=None, version='latest'):
-    archive_url, filename = __create_pypi_url(project, version=version)
+    archive_url, filename = _create_pypi_url(project, version=version)
     package = project if module is None else module
     if filename.endswith('.whl'):   # It's a Python Wheel
         path_truncate = 0
@@ -573,14 +571,93 @@ def pip_load(project, module=None, version='latest'):
     return module
 
 
+class PipImporter(object):
+
+    def __init__(self, package_map={}):
+        # Of form:
+        # package_map = {"package_import" : {"project":"name", "version":"0.10.1" }, [...]}
+        self.package_map = package_map
+        self.in_progress = {}
+
+    def find_module(self, fullname, path=None):
+        logger.debug("PipImporter FINDER =================>")
+        logger.debug("find_module - '%s'" % fullname)
+        try:
+            package_dict = self.package_map[fullname]
+        except KeyError:
+            package_dict = {"project":fullname, "version":"latest"}
+        self.project = package_dict['project']
+        self.version = package_dict['version']
+
+#   ================== 
+        try:
+            url, file = _create_pypi_url(self.project, version=self.version)
+            return self
+        except ValueError:
+            logger.info("[-] Not available in PyPI")
+            return None            
+
+        # if fullname in self.in_progress:
+        #     return None
+
+        # self.in_progress[fullname] = True
+        # logger.info("[@] Checking if built-in >")
+        # try:
+        #     if LEGACY:
+        #         loader = imp.find_module(fullname, path)
+        #     else:
+        #         try:    # After Python3.4
+        #             loader = importlib.util.find_spec(fullname, path)
+        #         except AttributeError:
+        #             loader = importlib.find_loader(fullname, path)
+        #         except ValueError as e:
+        #             log.debug(e)
+        #             loader = None
+        #     if loader:
+        #         logger.info("[-] Found locally!")
+        #         return loader
+        # except ImportError:
+        #     pass
+        # logger.info("[@] Checking if it is name repetition >")
+        # if fullname.split('.').count(fullname.split('.')[-1]) > 1:
+        #     logger.info("[-] Found locally!")
+        #     return None
+
+        # del self.in_progress[fullname]
+#   ================== 
+        logger.info("Trying to import '%s' - '%s' from project '%s'" % (fullname,self.version,self.project))
+        return self
+
+    def load_module(self, fullname):
+        logger.debug("PipImporter LOADER =================>")
+        mod = pip_load(self.project, module=fullname, version=self.version)
+        # mod.__loader__ = self
+        sys.modules[fullname] = mod
+        return mod
+
+
 @contextmanager
-def pip_repo():
+def pip_repo(package_map={}):
     '''
 Context Manager that provides import functionality from PyPI repositories through HTTPS similarly to "pip".
     '''
+    try:
+        importer = PipImporter(package_map=package_map)
+        sys.meta_path.insert(0,importer)
+        logger.debug("[*] Pip Importer created")
+        yield
+    except ImportError as e:
+        # logger.warning(e)
+        raise e
+    finally:    # Always remove the added PipImporter from sys.meta_path 
+        del sys.meta_path[0]
+
+
+def pip_requirements(requirements_file="requirements.txt"):
     False
     logger.warn("[-] Not implemented")
     pass
+
 
 
 __all__ = [
