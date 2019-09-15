@@ -179,7 +179,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         return self
 
 
-    def load_module(self, name):
+    def load_module(self, name, direct_load=False):
         if LEGACY: imp.acquire_lock()
         logger.debug("LOADER=================")
         logger.debug("[+] Loading %s" % name)
@@ -259,7 +259,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         except:
             mod.__path__ = self.base_url
         logger.debug("[+] Ready to execute '%s' code" % name)
-        sys.modules[name] = mod
+        if not direct_load:
+            sys.modules[name] = mod
         exec(final_src, mod.__dict__)
         logger.info("[+] '%s' imported succesfully!" % name)
         if LEGACY: imp.release_lock()
@@ -516,8 +517,9 @@ Example:
     # loader = importer.find_module(module_name)
 
     # if loader is importer:
-    module = importer.load_module(module_name)
+    module = importer.load_module(module_name, direct_load=True)
     if module:
+        # sys.modules.remove(module)
         return module
     raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
 
@@ -536,23 +538,23 @@ def __create_pypi_url(project, version='latest'):
     # archive_regex = r'<a.*?href=\"(.*)\"\.*?>(.+?)\-(\d{1}\.\d{1}\.\d{1})\.tar\.gz</a><br/>'
     archive_regex = r'<a.*?href=\"(.*)\"\.*?>((.+?)\-(\d{1}\.\d{1}\.\d{1}).*?)</a><br/>'
     pypi_matches = re.findall(archive_regex, pypi_html)
-    logger.debug("Links available from PyPI for project '%s' are %s" % (project, pypi_matches))
+    # logger.debug("Links available from PyPI for project '%s' are %s" % (project, pypi_matches))
     link_dict = {}
     for m in pypi_matches:
         link = m[0]
         filename = m[1]
         _project = m[2]
-        version = m[3]
-        link_dict[version] = link
+        _version = m[3]
+        link_dict[_version] = link
 
     if version == 'latest':
-        latest = sorted(link_dict.keys())[0]
+        latest = sorted(link_dict.keys())[-1]
         logger.info("[+] Loading '%s' - version '%s'" % (project,version))
         return link_dict[latest], filename
     else:
         try:
             ret_link = link_dict[version]
-            logger.info("[+] Loading '%s' - version '%s'" % (project,version))
+            logger.info("[+] Loading '%s' - requested version '%s'" % (project,version))
             return ret_link, filename
         except KeyError:
             raise ValueError("Version '%s' not available for PyPI project '%s'" % (version, project))
@@ -567,6 +569,16 @@ def pip_load(project, module=None, version='latest'):
         path_truncate = 1
     module = load(package, archive_url, path_truncate=path_truncate)
     return module
+
+
+@contextmanager
+def pip_repo():
+    '''
+Context Manager that provides import functionality from PyPI repositories through HTTPS similarly to "pip".
+    '''
+    False
+    logger.warn("[-] Not implemented")
+    pass
 
 
 __all__ = [

@@ -208,18 +208,36 @@ class Test( unittest.TestCase ) :
 		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
 		self.assertTrue(pack)	
 
+	def test_load_twice(self) :
+		httpimport.INSECURE = True
+		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
+		self.assertTrue(pack)
+		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
+		self.assertTrue(pack)
 
-	def test_pip_load(self) :
+	# def test_pip_load_relative_import(self) :
+	# 	pack = httpimport.pip_load('python-42', module='_42', version='latest')
+	# 	self.assertTrue(pack)
+
+
+	def test_pip_load_already_existent(self) :
 		pack = httpimport.pip_load('httpimport', version='latest')
 		self.assertTrue(pack)
 
-	def test_pip_load_version(self) :
-		pack = httpimport.pip_load('httpimport', version='0.6.0')
+
+	def test_pip_load(self) :
+		pack = httpimport.pip_load('covertutils', module='covertutils', version='latest')
 		self.assertTrue(pack)
+
+	def test_pip_load_version(self) :
+		version = '0.1.0'
+		pack = httpimport.pip_load('covertutils', version=version)
+		self.assertTrue(pack.__version__ == version)
+
 
 	def test_pip_load_version_invalid(self) :
 		try:
-			pack = httpimport.pip_load('httpimport', version='99.9.99')
+			pack = httpimport.pip_load('covertutils', version='99.9.99')
 		except ValueError as e:
 			self.assertTrue(e)
 
