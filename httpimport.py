@@ -30,7 +30,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.7.3'
+__version__ = '0.7.4'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -183,15 +183,17 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if LEGACY: imp.acquire_lock()
         logger.debug("LOADER=================")
         logger.debug("[+] Loading %s" % name)
-        if name in sys.modules and not RELOAD:
-            logger.info('[+] Module "%s" already loaded!' % name)
-            if LEGACY: imp.release_lock()
-            return sys.modules[name]
+        if not direct_load:
+            logger.info("[*] Loading module '%s' without importing to global Namespace" % name)            
+            if name in sys.modules and not RELOAD:
+                logger.info('[+] Module "%s" already loaded!' % name)
+                if LEGACY: imp.release_lock()
+                return sys.modules[name]
 
-        if name.split('.')[-1] in sys.modules and not RELOAD:
-            logger.info('[+] Module "%s" loaded as a top level module!' % name)
-            if LEGACY: imp.release_lock()
-            return sys.modules[name.split('.')[-1]]
+            if name.split('.')[-1] in sys.modules and not RELOAD:
+                logger.info('[+] Module "%s" loaded as a top level module!' % name)
+                if LEGACY: imp.release_lock()
+                return sys.modules[name.split('.')[-1]]
 
         if self.is_archive:
             zip_name = self._mod_to_paths(name)

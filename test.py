@@ -215,6 +215,7 @@ class Test( unittest.TestCase ) :
 		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
 		self.assertTrue(pack)
 
+
 	# def test_pip_load_relative_import(self) :
 	# 	pack = httpimport.pip_load('python-42', module='_42', version='latest')
 	# 	self.assertTrue(pack)
@@ -232,6 +233,9 @@ class Test( unittest.TestCase ) :
 	def test_pip_load_version(self) :
 		version = '0.1.0'
 		pack = httpimport.pip_load('covertutils', version=version)
+		self.assertTrue(pack.__version__ == version)
+		version = '0.6.0'
+		pack = httpimport.pip_load('httpimport', version=version)
 		self.assertTrue(pack.__version__ == version)
 
 
