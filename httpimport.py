@@ -597,41 +597,13 @@ class PipImporter(object):
             logger.info("[-] Not available in PyPI")
             return None            
 
-        # if fullname in self.in_progress:
-        #     return None
-
-        # self.in_progress[fullname] = True
-        # logger.info("[@] Checking if built-in >")
-        # try:
-        #     if LEGACY:
-        #         loader = imp.find_module(fullname, path)
-        #     else:
-        #         try:    # After Python3.4
-        #             loader = importlib.util.find_spec(fullname, path)
-        #         except AttributeError:
-        #             loader = importlib.find_loader(fullname, path)
-        #         except ValueError as e:
-        #             log.debug(e)
-        #             loader = None
-        #     if loader:
-        #         logger.info("[-] Found locally!")
-        #         return loader
-        # except ImportError:
-        #     pass
-        # logger.info("[@] Checking if it is name repetition >")
-        # if fullname.split('.').count(fullname.split('.')[-1]) > 1:
-        #     logger.info("[-] Found locally!")
-        #     return None
-
-        # del self.in_progress[fullname]
-#   ================== 
         logger.info("Trying to import '%s' - '%s' from project '%s'" % (fullname,self.version,self.project))
         return self
 
     def load_module(self, fullname):
         logger.debug("PipImporter LOADER =================>")
         mod = pip_load(self.project, module=fullname, version=self.version)
-        # mod.__loader__ = self
+        mod.__loader__ = self
         sys.modules[fullname] = mod
         return mod
 
@@ -654,6 +626,12 @@ Context Manager that provides import functionality from PyPI repositories throug
 
 
 def pip_requirements(requirements_file="requirements.txt"):
+    # package_map = {}
+    # try:
+    #     with open(requirements_file) as f:
+    #         for line in f:
+    #             line.split('==')
+
     False
     logger.warn("[-] Not implemented")
     pass

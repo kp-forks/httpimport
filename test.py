@@ -245,12 +245,27 @@ class Test( unittest.TestCase ) :
 		except ValueError as e:
 			self.assertTrue(e)
 
-	def test_pip_repo(self):
+	def test_pip_repo_no_deps(self):
 		with httpimport.pip_repo():
 			import covertutils
 		succeeds = 'covertutils' in sys.modules
 		del sys.modules['covertutils']
 		self.assertTrue(succeeds)
+
+	# def test_pip_repo_already_loaded(self):
+	# 	with httpimport.pip_repo():
+	# 		from httpimport import pip_load
+	# 		self.assertTrue(httpimport)
+	# 	succeeds = 'httpimport_again' in sys.modules
+	# 	# del sys.modules['httpimport_again']
+	# 	self.assertTrue(succeeds)
+
+	# def test_pip_repo_heavy_deps(self):
+	# 	with httpimport.pip_repo():
+	# 		import beautifulsoup
+	# 	succeeds = 'beautifulsoup' in sys.modules
+	# 	del sys.modules['beautifulsoup']
+	# 	self.assertTrue(succeeds)
 
 
 # ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
