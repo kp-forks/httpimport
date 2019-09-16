@@ -36,8 +36,16 @@ class Test( unittest.TestCase ) :
 		httpimport.INSECURE = True
 		with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
 			import test_package
-
 		self.assertTrue(test_package)
+
+	def test_dependent_HTTP(self) :
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(['test_package', 'dependent_module'], base_url = 'http://localhost:%d/' % self.PORT) :
+			import dependent_module
+		self.assertTrue(dependent_module)
+		del sys.modules['dependent_module']
+		del sys.modules['test_package']
+		
 
 	def test_simple_HTTP_fail(self) :
 		httpimport.INSECURE = True
@@ -186,6 +194,10 @@ class Test( unittest.TestCase ) :
 		self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
 
 
+	# def test_dependent_http(self) :
+	# 	httpimport.INSECURE = True
+	# 	pack = httpimport.load('dependent_module', 'http://localhost:%d/' % self.PORT)
+	# 	self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
 
 
 # ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
