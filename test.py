@@ -22,6 +22,8 @@ class Test( unittest.TestCase ) :
 	PORT=8000
 
 	def tearDown(self):
+		if 'dependent_module' in sys.modules:
+			del sys.modules['test_package']
 		if 'test_package' in sys.modules:
 			del sys.modules['test_package']
 		if 'test_package.a' in sys.modules:
@@ -44,7 +46,10 @@ class Test( unittest.TestCase ) :
 			import dependent_module
 		self.assertTrue(dependent_module)
 		del sys.modules['dependent_module']
-		del sys.modules['test_package']
+		try:
+			del sys.modules['test_package']
+		except:
+			pass
 		
 
 	def test_simple_HTTP_fail(self) :
