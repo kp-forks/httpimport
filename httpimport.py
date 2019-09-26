@@ -137,7 +137,6 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         return set(self._paths) & set(paths.values())
 
 
-
     def find_module(self, fullname, path=None):
         logger.debug("FINDER=================")
         logger.debug("[!] Searching %s" % fullname)
@@ -202,7 +201,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             filepath = mod_dict['path']
             module_type = mod_dict['type']
 
-        except IOError as e:
+        except ValueError:
             module_src = None
             logger.info("[-] '%s' is not a module:" % name)
             logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
@@ -234,7 +233,6 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if LEGACY: imp.release_lock()
         return mod
 
-
     def __fetch_compiled(self, module_compiled) :
         import marshal
         module_src = None
@@ -251,7 +249,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         except ValueError :
             pass
 
-        raise ValueError("[!] No ")
+        raise ValueError("[!] Not possible to unmarshal '.pyc' file")
 
 
     def __isHTTPS(self, url) :
@@ -288,7 +286,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                     logger.info("[-] '%s' is not a %s" % (fullname,mod_type))
 
             if content is None:
-                raise ImportError("Module '%s' not found in URL '%s'" % (fullname,filepath))
+                raise ValueError("Module '%s' not found in URL '%s'" % (fullname,self.base_url))
+                # return None
 
             if compiled:
                 src = self.__fetch_compiled(content)
