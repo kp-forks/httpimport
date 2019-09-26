@@ -23,7 +23,7 @@ before_install:
   # - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 install:
   - pip install -r requirements.txt
-  - pip install tox-travis
+  # - pip install tox-travis
 # command to run tests
 script: pytest test.py
 
@@ -31,5 +31,5 @@ branches:
   only:
     - tests
 
-after_success:
-  - codecov # submit coverage
+# after_success:
+#   - codecov # submit coverage
