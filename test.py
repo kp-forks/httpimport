@@ -45,11 +45,6 @@ class Test( unittest.TestCase ) :
 		with httpimport.remote_repo(['test_package', 'dependent_module'], base_url = 'http://localhost:%d/' % self.PORT) :
 			import dependent_module
 		self.assertTrue(dependent_module)
-		del sys.modules['dependent_module']
-		try:
-			del sys.modules['test_package']
-		except:
-			pass
 		
 
 	def test_simple_HTTP_fail(self) :
@@ -70,7 +65,6 @@ class Test( unittest.TestCase ) :
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
-		del sys.modules['test_package']
 
 
 	def test_tarbz2_import(self):
@@ -82,7 +76,6 @@ class Test( unittest.TestCase ) :
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
-		del sys.modules['test_package']
 
 
 	def test_autodetect_corrupt_file(self):
@@ -111,7 +104,6 @@ class Test( unittest.TestCase ) :
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
-		del sys.modules['test_package']
 
 
 	def test_targz_import(self):
@@ -123,7 +115,7 @@ class Test( unittest.TestCase ) :
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
-		del sys.modules['test_package']
+
 
 	def test_tar_import(self):
 		self.assertFalse('test_package' in sys.modules)
@@ -134,7 +126,6 @@ class Test( unittest.TestCase ) :
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
-		del sys.modules['test_package']
 
 	# Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
 	def test_zip_import_w_pwd(self):
@@ -147,7 +138,6 @@ class Test( unittest.TestCase ) :
 			):
 			import test_package
 		self.assertTrue('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
-		del sys.modules['test_package']
 
 	# Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
 	def test_enc_zip_import_w_pwd_wrong(self):
