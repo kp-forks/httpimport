@@ -23,7 +23,7 @@ class Test( unittest.TestCase ) :
 
 	def tearDown(self):
 		if 'dependent_module' in sys.modules:
-			del sys.modules['test_package']
+			del sys.modules['dependent_module']
 		if 'test_package' in sys.modules:
 			del sys.modules['test_package']
 		if 'test_package.a' in sys.modules:
