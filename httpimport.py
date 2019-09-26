@@ -112,19 +112,22 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if self.is_archive:
             logger.info("[+] Archive file loaded successfully from '%s'!" % self.base_url)
             self._paths = _list_archive(self.archive)
-            # # "/".join(x.filename.split('/')[traverse_dir:])
 
-    def _mod_to_paths(self, fullname):
+
+    def _mod_to_filepath(self, fullname, compiled=False):
+        compiled_suffix = 'c' if compiled else ''
         # get the python module name
-        py_filename = fullname.replace(".", os.sep) + ".py"
+        py_filename = fullname.replace(".", os.sep) + ".py" + compiled_suffix
         # get the filename if it is a package/subpackage
-        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__.py"
-        if py_filename in self._paths:
-            return py_filename
-        elif py_package in self._paths:
-            return py_package
+        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__.py" + compiled_suffix
+
+        if self.is_archive:
+            return {'module': py_filename, 'package': py_package}
         else:
-            return None
+            return {
+            'module': self.base_url + py_filename,
+            'package': self.base_url + py_package
+            }
 
 
     def find_module(self, fullname, path=None):
@@ -256,28 +259,70 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if LEGACY: imp.release_lock()
         return mod
 
-    def __fetch_compiled(self, url) :
+    def __fetch_compiled(self, module_compiled) :
         import marshal
         module_src = None
         try :
-            module_compiled = urlopen(url + 'c').read()  # from blah.py --> blah.pyc
-            try :
-                module_src = marshal.loads(module_compiled[8:]) # Strip the .pyc file header of Python up to 3.3
-                return module_src
-            except ValueError :
-                pass
-            try :
-                module_src = marshal.loads(module_compiled[12:])# Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
-                return module_src
-            except ValueError :
-                pass
-        except IOError as e:
-            logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
-        return module_src
+            # Strip the .pyc file header of Python up to 3.3
+            module_src = marshal.loads(module_compiled[8:])
+            return module_src
+        except ValueError :
+            pass
+        try :
+            # Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
+            module_src = marshal.loads(module_compiled[12:])
+            return module_src
+        except ValueError :
+            pass
+
+        raise ValueError("[!] No ")
 
 
     def __isHTTPS(self, url) :
         return self.base_url.startswith('https') 
+
+
+    def _open_module_src(self, fullname, compiled=False):
+
+        paths = self._mod_to_filepaths(fullname)
+
+        if self.is_archive:
+            try:
+                correct_filepath_set = set(self._paths) & set(paths.values())
+                filepath = correct_filepath_set.pop()
+            except KeyError:
+                raise ImportError("Module '%s' not found in archive" % fullname)
+
+            content = _open_archive_file(self.archive, filepath, 'r', zip_pwd=self.__zip_pwd).read()
+            if compiled:
+                src = self.__fetch_compiled(content)
+                logger.info('[+] Bytecode from archived file "%s" loaded!' % filepath)
+            else:
+                src = content
+                logger.info('[+] Source from archived file "%s" loaded!' % filepath)
+        else:
+            content = None
+            for mod_type in paths:
+                file_url = paths[mod_type]
+                try:
+                    content = urlopen(file_url).read()
+                except IOError:
+                    logger.info("[-] '%s' is not a %s" % (fullname,mod_type))
+
+            if content is None:
+                raise ImportError("Module '%s' not found in URL '%s'" % (fullname,file_url))
+
+            if compiled:
+                src = self.__fetch_compiled(content)
+                logger.info("[+] Bytecode loaded from URL '%s'!'" % file_url)
+            else:
+                src = content
+                logger.info("[+] Source loaded from URL '%s'!'" % file_url)
+
+
+        return src
+
+
 
 def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
     if isinstance(archive_obj, tarfile.TarFile):
