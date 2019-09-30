@@ -174,14 +174,12 @@ class Test( unittest.TestCase ) :
 		del sys.modules['pybitbucket']
 
 
-# 	def test_gitlab_repo(self) :
-# 		print ("[+] Importing from GitLab")
-# # https://gitlab.kwant-project.org/kwant/kwant
-# 		with httpimport.gitlab_repo('gitmate', 'open-source/IGitt', module='IGitt'):
-# 			import IGitt
-# 		# with httpimport.gitlab_repo('harinathreddyk', 'python-gitlab', module='gitlab'):
-# 		# 	from gitlab import const as gitlab
-# 		self.assertTrue(IGitt)
+	def test_gitlab_repo(self) :
+		print ("[+] Importing from GitLab")
+		with httpimport.gitlab_repo('blacktroll', 'lan-chat', module='tools', branch='release'):
+			import tools
+		self.assertTrue(tools)
+		del sys.modules['tools']
 
 
 	def test_load_http(self) :
