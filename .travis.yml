@@ -1,5 +1,6 @@
 language: python
 python:
+  - 2.6
   - 2.7.13
   - 3.4
   - 3.7
@@ -7,25 +8,24 @@ python:
   - pypy   # PyPy2 5.8
   - pypy3  # Pypy3 5.8
 matrix:
-  allow_failures:
-    # - python: 3.6
+  exclude:
+    - python: 2.6
+      env: JYTHON=true
 # command to install dependencies
-before_install:
-before_install:
-  # - python --version
-  # - pip install -U pip
-  # - pip install -U pytest
-  # - pip install codecov
-    # - pip install flake8
-  # stop the build if there are Python syntax errors or undefined names...
-  # - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
-  # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
-  # - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+
+before_install: if [ "$JYTHON" == "true" ]; then sudo apt-get install jython; fi
+
+before_script: if [ "$JYTHON" == "true" ]; then export PYTHON_EXE=jython; jython -c "print ''"; else export PYTHON_EXE=python; fi
+
+
 install:
-  - pip install -r requirements.txt
-  # - pip install tox-travis
+#  - pip install -r requirements.txt
+
 # command to run tests
-script: pytest test.py
+script: $PYTHON_EXE -m unittest test
+
+
 
 branches:
   only:
