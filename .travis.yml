@@ -13,13 +13,14 @@ matrix:
 
     
 before_install:
-#  - export JYTHON_URL='http://search.maven.org/remotecontent?filepath=org/python/jython-installer/2.7.1/jython-installer-2.7.1.jar'
-#  - if [ -n "$JYTHON" ]; then wget $JYTHON_URL -O jython_installer.jar; java -jar jython_installer.jar -s -d $HOME/jython; export PATH=$HOME/jython:$PATH; fi
+# Use the Jython standalone - 2.7.1 (supported)
+  - export JYTHON_URL='http://search.maven.org/remotecontent?filepath=org/python/jython-standalone/2.7.1/jython-standalone-2.7.1.jar'
+  - if [ -n "$JYTHON" ]; then wget $JYTHON_URL -O jython.jar; fi
 
-# Use the Ubuntu Xenial's Repository version of Jython
-   - if [ -n "$JYTHON" ]; then sudo apt-get install jython; fi
+# Use the Ubuntu Xenial's Repository version of Jython - 2.5.3 (non supported)
+#   - if [ -n "$JYTHON" ]; then sudo apt-get install jython; fi
 
-before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE=jython; jython -c "print ''"; else export PYTHON_EXE=python; fi; echo "Using-> '$PYTHON_EXE'"
+before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; else export PYTHON_EXE=python; fi; echo "Using-> '$PYTHON_EXE'"
 
 install:
 #  - pip install -r requirements.txt
