@@ -28,7 +28,7 @@ before_install:
   - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.deb; sudo dpkg -i ironpython2.deb;  fi
 
 
-before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; elif [ -n "$IRONPYTHON" ]; then export PYTHON_EXE="ipy " else export PYTHON_EXE=python; fi;
+before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; elif [ -n "$IRONPYTHON" ]; then export PYTHON_EXE="ipy "; else export PYTHON_EXE=python; fi;
 
 install:
 #  - pip install -r requirements.txt
