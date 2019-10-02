@@ -24,8 +24,9 @@ before_install:
 #   - if [ -n "$JYTHON" ]; then sudo apt-get install jython; fi
 
 # Use the IronPython Debian package - 2.7.9 (supported)
+# Installing Dependencies too
   - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/ironpython_2.7.9.deb'
-  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.deb; sudo dpkg -i ironpython2.deb;  fi
+  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.deb; sudo dpkg -i ironpython2.deb; sudo apt get install mono-runtime libmono-posix4.0-cil; fi
 
 
 before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; elif [ -n "$IRONPYTHON" ]; then export PYTHON_EXE="ipy "; else export PYTHON_EXE=python; fi;
