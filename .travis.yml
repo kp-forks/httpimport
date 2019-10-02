@@ -8,10 +8,11 @@ python:
   - pypy3  # Pypy3 5.8
 matrix:
   include:
-    - python: 2.7.1
+    - python: 2.7
       env: JYTHON=org.python:jython-standalone:2.7.1
+      
   include:
-    - python: 2.7.9
+    - python: 2.7
       env: IRONPYTHON=github.com:ironpython2:2.7.9
       
 before_install:
