@@ -8,10 +8,12 @@ python:
   - pypy3  # Pypy3 5.8
 matrix:
   include:
-    - python: 2.7
-      env: JYTHON=org.python:jython-installer:2.7.1
-
-    
+    - python: 2.7.1
+      env: JYTHON=org.python:jython-standalone:2.7.1
+  include:
+    - python: 2.7.9
+      env: IRONPYTHON=github.com:ironpython2:2.7.9
+      
 before_install:
 # Use the Jython standalone - 2.7.1 (supported)
   - export JYTHON_URL='http://search.maven.org/remotecontent?filepath=org/python/jython-standalone/2.7.1/jython-standalone-2.7.1.jar'
@@ -20,7 +22,14 @@ before_install:
 # Use the Ubuntu Xenial's Repository version of Jython - 2.5.3 (non supported)
 #   - if [ -n "$JYTHON" ]; then sudo apt-get install jython; fi
 
-before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; else export PYTHON_EXE=python; fi; echo "Using-> '$PYTHON_EXE'"
+# Use the IronPython Debian package - 2.7.9 (supported)
+  - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/ironpython_2.7.9.deb'
+  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.deb; sudo dpkg -i ironpython2.deb;  fi
+
+
+before_script: 
+  -if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; else export PYTHON_EXE=python; fi; echo "Using-> '$PYTHON_EXE'"
+  -if [ -n "$IRONPYTHON" ]; then export PYTHON_EXE="ipy "; "$PYTHON_EXE" -c "print ''"; else export PYTHON_EXE=python; fi; echo "Using-> '$PYTHON_EXE'"
 
 install:
 #  - pip install -r requirements.txt
