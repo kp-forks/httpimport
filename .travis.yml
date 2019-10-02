@@ -11,10 +11,10 @@ matrix:
     - python: 2.7
       env: JYTHON=org.python:jython-standalone:2.7.1
       
-  include:
-    - python: 2.7
-    mono: 5.4.1
-    env: IRONPYTHON=github.com:ironpython2:2.7.9
+#  include:
+#    - python: 2.7
+#    mono: 5.4.1
+#    env: IRONPYTHON=github.com:ironpython2:2.7.9
       
 before_install:
 # Use the Jython standalone - 2.7.1 (supported)
@@ -26,8 +26,8 @@ before_install:
 
 # Use the IronPython Debian package - 2.7.9 (supported)
 # Installing Dependencies too
-  - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/ironpython_2.7.9.deb'
-  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.deb; sudo dpkg -i ironpython2.deb;  fi
+#  - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/ironpython_2.7.9.deb'
+#  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.deb; sudo dpkg -i ironpython2.deb;  fi
 
 
 before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; elif [ -n "$IRONPYTHON" ]; then export PYTHON_EXE="ipy "; else export PYTHON_EXE=python; fi;
