@@ -6,8 +6,8 @@ python:
   # PyPy versions
   - pypy   # PyPy2 5.8
   - pypy3  # Pypy3 5.8
-mono:
-  - 5.4.1
+#mono:
+#  - 5.4.1
 matrix:
 #  include:
 #    - python: 2.7
@@ -28,11 +28,11 @@ before_install:
 # Use the IronPython ZIP release - 2.7.9 (supported)
 # Installing Dependencies too
   - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/IronPython.2.7.9.zip'
-#  - if [ -n "$IRONPYTHON" ]; then sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF; fi
-#  - if [ -n "$IRONPYTHON" ]; then sudo apt install apt-transport-https ca-certificates; fi
-#  - if [ -n "$IRONPYTHON" ]; then echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list; fi
-#  - if [ -n "$IRONPYTHON" ]; then sudo apt update; fi
-#  - if [ -n "$IRONPYTHON" ]; then sudo apt install mono-devel; fi
+  - if [ -n "$IRONPYTHON" ]; then sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF; fi
+  - if [ -n "$IRONPYTHON" ]; then sudo apt install apt-transport-https ca-certificates; fi
+  - if [ -n "$IRONPYTHON" ]; then echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list; fi
+  - if [ -n "$IRONPYTHON" ]; then sudo apt update; fi
+  - if [ -n "$IRONPYTHON" ]; then sudo apt install mono-devel; fi
   - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.zip && unzip -u ironpython2.zip; fi
 
 
