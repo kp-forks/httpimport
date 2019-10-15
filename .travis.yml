@@ -47,6 +47,7 @@ script: $PYTHON_EXE -m unittest test
 branches:
   only:
     - tests
+    - ironpython-travis
 
 # after_success:
 #   - codecov # submit coverage
