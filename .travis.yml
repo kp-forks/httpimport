@@ -24,18 +24,23 @@ before_install:
 # Use the Ubuntu Xenial's Repository version of Jython - 2.5.3 (non supported)
 #   - if [ -n "$JYTHON" ]; then sudo apt-get install jython; fi
 
-# Use the IronPython Debian package - 2.7.9 (supported)
+# Use the IronPython ZIP release - 2.7.9 (supported)
 # Installing Dependencies too
-  - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/ironpython_2.7.9.zip'
-  - if [ -n "$IRONPYTHON" ]; then sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF; fi
-  - if [ -n "$IRONPYTHON" ]; then sudo apt install apt-transport-https ca-certificates; fi
-  - if [ -n "$IRONPYTHON" ]; then echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list; fi
-  - if [ -n "$IRONPYTHON" ]; then sudo apt update; fi
-  - if [ -n "$IRONPYTHON" ]; then sudo apt install mono-devel; fi
-  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.zip && unzip ironpython2.zip; export PYTHON_EXE="mono net45/ipy.exe"; fi
+  - export IRONPYTHON_URL='https://github.com/IronLanguages/ironpython2/releases/download/ipy-2.7.9/IronPython.2.7.9.zip'
+#  - if [ -n "$IRONPYTHON" ]; then sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF; fi
+#  - if [ -n "$IRONPYTHON" ]; then sudo apt install apt-transport-https ca-certificates; fi
+#  - if [ -n "$IRONPYTHON" ]; then echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list; fi
+#  - if [ -n "$IRONPYTHON" ]; then sudo apt update; fi
+#  - if [ -n "$IRONPYTHON" ]; then sudo apt install mono-devel; fi
+  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.zip && unzip ironpython2.zip; fi
 
 
-before_script: if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; else export PYTHON_EXE=python; fi; echo "Using-> '$PYTHON_EXE'"
+before_script: 
+  - if [ -n "$JYTHON" ]; then export PYTHON_EXE="java -jar jython.jar "; "$PYTHON_EXE" -c "print ''"; fi
+  - if [ -n "$IRONPYTHON" ]; then export PYTHON_EXE="mono net45/ipy.exe "; "$PYTHON_EXE" -c "print ''"; fi
+  - if [ -n "PYTHON_EXE" ]; then export PYTHON_EXE="python "; fi
+  - echo "Using-> '$PYTHON_EXE'"
+  
 install:
 #  - pip install -r requirements.txt
 
