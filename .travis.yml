@@ -32,7 +32,7 @@ before_install:
 #  - if [ -n "$IRONPYTHON" ]; then echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list; fi
 #  - if [ -n "$IRONPYTHON" ]; then sudo apt update; fi
 #  - if [ -n "$IRONPYTHON" ]; then sudo apt install mono-devel; fi
-  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.zip && unzip ironpython2.zip; fi
+  - if [ -n "$IRONPYTHON" ]; then wget $IRONPYTHON_URL -O ironpython2.zip && unzip -u ironpython2.zip; fi
 
 
 before_script: 
